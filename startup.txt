@@ -1,2 +1,1 @@
-python -c "from app import db; db.create_all()" && python app.py
-
+python app.py
