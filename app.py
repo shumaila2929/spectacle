@@ -9,14 +9,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY') 
+app.secret_key = os.getenv('SECRET_KEY')
 
 # Configuration
 UPLOAD_FOLDER = 'static/uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('AZURE_DATABASE_URI')  # Using an environment variable for security
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 db = SQLAlchemy(app)
@@ -259,6 +259,7 @@ if __name__ == "__main__":
         with app.app_context():
             db.create_all()
             print("Database created!")
-    app.run(debug=os.getenv('FLASK_DEBUG', 'false').lower() == 'true')
+    app.run(debug=True)  # or use os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
+
 
 
