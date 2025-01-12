@@ -16,7 +16,7 @@ UPLOAD_FOLDER = 'static/uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'  # Local SQLite database
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 db = SQLAlchemy(app)
@@ -253,7 +253,11 @@ def search():
 
 
 
-
-if __name__ == '__main__':
-    db.create_all()
+if __name__ == "__main__":
+    # Create the database if it does not exist
+    if not os.path.exists('app.db'):
+        with app.app_context():
+            db.create_all()
+            print("Database created!")
     app.run(debug=False)
+
