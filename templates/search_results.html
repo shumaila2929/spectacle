@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    body {
+        background-color: #f9f9f9;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    .results-header {
+        text-align: center;
+        padding: 30px;
+        background: linear-gradient(to right, #ff416c, #ff4b2b);
+        color: white;
+        font-size: 1.5rem;
+    }
+
+    .results-header h2 {
+        margin: 0;
+        font-size: 2.5rem;
+    }
+
+    .videos-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: center;
+        padding: 40px 20px;
+    }
+
+    .video-card {
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        height: auto;
+        background-color: #000;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .video-card:hover {
+        transform: scale(1.05);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .video-card video {
+        width: 100%;
+        height: auto;
+        object-fit: cover;
+    }
+
+    .video-info {
+        padding: 10px;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        font-size: 0.9rem;
+    }
+
+    .video-info p {
+        margin: 5px 0;
+    }
+
+    .comments-section {
+        margin-top: 20px;
+        background-color: #333;
+        padding: 10px;
+        border-radius: 10px;
+    }
+
+    .comments-section h4 {
+        margin: 0 0 10px;
+        color: #fff;
+        font-size: 1.2rem;
+    }
+
+    .comment-card {
+        border-bottom: 1px solid #555;
+        padding: 10px 0;
+    }
+
+    .comment-card:last-child {
+        border-bottom: none;
+    }
+
+    .comment-card p {
+        margin: 0;
+        color: #ccc;
+    }
+
+    .comment-card p strong {
+        color: #fff;
+    }
+
+    .pagination {
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .pagination a {
+        display: inline-block;
+        padding: 10px 15px;
+        margin: 0 5px;
+        text-decoration: none;
+        background-color: #ff4b2b;
+        color: white;
+        border-radius: 5px;
+    }
+
+    .pagination a:hover {
+        background-color: #ff735c;
+    }
+
+    @media (max-width: 768px) {
+        .videos-container {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .video-card {
+            max-width: 100%;
+        }
+    }
+</style>
+
+<div class="results-header">
+    <h2>{{ search_query | default("Searching Ranked Profile...") }}</h2>
+</div>
+
+<div class="videos-container">
+    {% for result in results %}
+    <div class="video-card">
+        <video controls>
+            <source src="{{ url_for('static', filename='uploads/' + result.filename) }}" type="video/mp4" alt="Video preview not available">
+        </video>
+        <div class="video-info">
+            <p><strong>Uploaded by:</strong> {{ result.uploaded_by }}</p>
+            <p><strong>Likes:</strong> {{ result.likes_count }}</p>
+            <div class="comments-section">
+                <h4>Comments:</h4>
+                {% if result.comments %}
+                {% for comment in result.comments %}
+                <div class="comment-card">
+                    <p><strong>{{ comment.user }}</strong>: {{ comment.content }}</p>
+                    <p><small>{{ comment.timestamp }}</small></p>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p>No comments yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="pagination">
+    {% if pagination %}
+        {{ pagination }}
+    {% endif %}
+</div>
+{% endblock %}

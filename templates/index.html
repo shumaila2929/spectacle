@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    body {
+        background-color: #fff;
+        margin: 0;
+        padding: 0;
+        font-family: 'Arial', sans-serif;
+    }
+
+    .video-feed-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+    }
+
+    .video-feed {
+        width: 100%;
+        max-width: 600px;
+    }
+
+    .video-card {
+        position: relative;
+        width: 100%;
+        background: #ffffff;
+        border-radius: 15px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: 1px solid #ddd;
+        display: none; /* Initially hide all cards */
+    }
+
+    .video-card.active {
+        display: block; /* Display only the active card */
+    }
+
+    .video-card video {
+        width: 100%;
+        height: auto;
+        max-height: 400px;
+    }
+
+    .video-details {
+        padding: 15px;
+        background-color: #fff;
+    }
+
+    .video-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px;
+    }
+
+    .video-actions button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 36px;
+        color: #ff0000; /* Default heart color */
+        transition: transform 0.3s ease, color 0.3s ease;
+    }
+
+    .video-actions button:hover {
+        transform: scale(1.2); /* Slightly enlarge on hover */
+        color: #e60000; /* Darker red */
+    }
+
+    .video-actions span {
+        font-size: 16px;
+        color: #333;
+    }
+
+    .comments-section {
+        margin-top: 10px;
+        padding: 10px 15px;
+        background: #f9f9f9;
+        border-top: 1px solid #ddd;
+        border-radius: 5px;
+    }
+
+    .comments-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .comments-list li {
+        padding: 10px 0;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        align-items: flex-start;
+    }
+
+    .comments-list li:last-child {
+        border-bottom: none;
+    }
+
+    .comment-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #ddd;
+        margin-right: 10px;
+    }
+
+    .comment-content {
+        flex-grow: 1;
+    }
+
+    .comment-content strong {
+        font-weight: bold;
+        color: #007bff;
+    }
+
+    .comment-form {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .comment-form textarea {
+        flex: 1;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        resize: none;
+        font-size: 14px;
+    }
+
+    .comment-form button {
+        background: #007bff;
+        border: none;
+        padding: 10px 15px;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.3s ease;
+    }
+
+    .comment-form button:hover {
+        background: #0056b3;
+    }
+
+    .load-comments-btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        padding: 8px 0;
+        margin-top: 10px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+    .load-comments-btn:hover {
+        background: #0056b3;
+    }
+
+    .nav-button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        margin: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 18px;
+    }
+
+    .nav-button:hover {
+        background-color: #0056b3;
+    }
+</style>
+
+<div class="video-feed-wrapper">
+    <button class="nav-button" id="up-button" onclick="navigate(-1)">&#9650; Up</button>
+    <div class="video-feed" id="video-feed">
+        {% for video in videos %}
+        <div class="video-card" id="video-card-{{ video.id }}">
+            <video controls>
+                <source src="{{ url_for('static', filename='uploads/' + video.filename) }}" type="video/mp4">
+            </video>
+            <div class="video-details">
+                <div class="video-actions">
+                    <button onclick="likeVideo({{ video.id }})">&#9829;</button>
+                    <span id="like-count-{{ video.id }}">{{ video.likes_count }}</span>
+                </div>
+                <div class="comments-section">
+                    <ul id="comments-list-{{ video.id }}" class="comments-list" style="display: none;">
+                        {% for comment in video.comments %}
+                        <li>
+                            <div class="comment-avatar"></div>
+                            <div class="comment-content">
+                                <strong>{{ comment.user }}:</strong> {{ comment.content }}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <button class="load-comments-btn" onclick="toggleComments({{ video.id }})">
+                       Comments
+                    </button>
+                    <div class="comment-form">
+                        <textarea id="comment-content-{{ video.id }}" placeholder="Add a comment"></textarea>
+                        <button onclick="addComment({{ video.id }})">Add Comment</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <button class="nav-button" id="down-button" onclick="navigate(1)">&#9660; Down</button>
+</div>
+
+<script>
+    let currentIndex = 0;
+    const videoCards = document.querySelectorAll('.video-card');
+
+    function updateVisibility() {
+        videoCards.forEach((card, index) => {
+            card.classList.toggle('active', index === currentIndex);
+        });
+    }
+
+    function navigate(direction) {
+        const newIndex = currentIndex + direction;
+        if (newIndex >= 0 && newIndex < videoCards.length) {
+            currentIndex = newIndex;
+            updateVisibility();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (videoCards.length > 0) {
+            updateVisibility();
+        }
+    });
+
+    function toggleComments(videoId) {
+        const commentsList = document.getElementById(`comments-list-${videoId}`);
+        commentsList.style.display = commentsList.style.display === 'none' ? 'block' : 'none';
+    }
+
+// Like Video Function
+async function likeVideo(videoId) {
+    try {
+        const response = await fetch('/like', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ video_id: videoId }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.message === 'Video liked successfully!') {
+            const likeCountElem = document.getElementById(`like-count-${videoId}`);
+            likeCountElem.textContent = result.likes_count;
+        } else {
+            alert(result.message);
+        }
+    } catch (error) {
+        console.error('Error liking video:', error);
+        alert('An error occurred while liking the video.');
+    }
+}
+
+// Add Comment Function
+async function addComment(videoId) {
+    try {
+        const content = document.getElementById(`comment-content-${videoId}`).value.trim();
+        if (!content) {
+            alert('Comment cannot be empty!');
+            return;
+        }
+
+        const response = await fetch('/comment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ video_id: videoId, content }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.message === 'Comment added successfully!') {
+            const commentsListElem = document.getElementById(`comments-list-${videoId}`);
+            const newCommentElem = document.createElement('li');
+            newCommentElem.innerHTML = `
+                <div class="comment-avatar"></div>
+                <div class="comment-content">
+                    <strong>${result.comment.user}:</strong> ${result.comment.content} 
+                    <small>${result.comment.timestamp}</small>
+                </div>
+            `;
+            commentsListElem.appendChild(newCommentElem);
+            document.getElementById(`comment-content-${videoId}`).value = ''; // Clear input
+        } else {
+            alert(result.message);
+        }
+    } catch (error) {
+        console.error('Error adding comment:', error);
+        alert('An error occurred while adding the comment.');
+    }
+}
+
+</script>
+{% endblock %}
